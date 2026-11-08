@@ -127,7 +127,7 @@ public final class ExperimentRunner {
                                     + " but expected " + expected + " for " + experiment + "/" + input + "/n=" + n);
                         }
                         EditCounters c = algo.counters();
-                        csv.printf(Locale.ROOT, "%s,edit,%s,%s,%d,%d,%d,%.4f,%d,%d,%d,%d,%d,,%n",
+                        csv.printf(Locale.ROOT, "%s,edit,%s,%s,%d,%d,%d,%.6f,%d,%d,%d,%d,%d,,%n",
                                 experiment, algo.name(), input, p.a().length(), p.b().length(), run,
                                 times[run - 1], d, c.comparisons, c.subproblems, c.cellsAllocated, c.maxDepth);
                     }
@@ -163,7 +163,7 @@ public final class ExperimentRunner {
                             + "/" + input + "/n=" + n + "/m=" + m);
                 }
                 SearchCounters c = algo.counters();
-                csv.printf(Locale.ROOT, "%s,search,%s,%s,%d,%d,%d,%.4f,%d,%d,,,,%d,%d%n",
+                csv.printf(Locale.ROOT, "%s,search,%s,%s,%d,%d,%d,%.6f,%d,%d,,,,%d,%d%n",
                         experiment, algo.name(), input, n, m, run, times[run - 1], found.size(),
                         c.comparisons, c.lpsComparisons, c.backsteps);
             }
