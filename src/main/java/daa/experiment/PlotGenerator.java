@@ -146,6 +146,19 @@ public final class PlotGenerator {
         return new double[][]{xs, ys};
     }
 
+    /** Recursive points of E1 plus the limit probe E1L (which exists only for some inputs). */
+    private double[][] recursivePoints(String input, ToDoubleFunction<Map.Entry<Key, Stat>> y) {
+        double[][] a = points("E1", "recursive", input, PlotGenerator::n, y);
+        double[][] b = points("E1L", "recursive", input, PlotGenerator::n, y);
+        double[] xs = new double[a[0].length + b[0].length];
+        double[] ys = new double[xs.length];
+        System.arraycopy(a[0], 0, xs, 0, a[0].length);
+        System.arraycopy(b[0], 0, xs, a[0].length, b[0].length);
+        System.arraycopy(a[1], 0, ys, 0, a[1].length);
+        System.arraycopy(b[1], 0, ys, a[1].length, b[1].length);
+        return new double[][]{xs, ys};
+    }
+
     private Stat stat(String experiment, String algorithm, String input, int n, int m) {
         return stats.get(new Key(experiment, algorithm, input, n, m));
     }
@@ -162,7 +175,7 @@ public final class PlotGenerator {
         c.getStyler().setYAxisLogarithmic(true);
         for (String input : List.of("disjoint", "random", "typo")) {
             add(c, "recursive, " + INPUT_LABEL.get(input),
-                    points("E1", "recursive", input, PlotGenerator::n, e -> e.getValue().subproblems),
+                    recursivePoints(input, e -> e.getValue().subproblems),
                     INPUT_COLOR.get(input), SeriesMarkers.CIRCLE, SeriesLines.SOLID);
         }
         add(c, "table and two rows, every input: (n+1)(m+1)",
@@ -180,7 +193,7 @@ public final class PlotGenerator {
         c.getStyler().setYAxisLogarithmic(true);
         for (String input : List.of("disjoint", "random", "typo")) {
             add(c, "recursive, " + INPUT_LABEL.get(input),
-                    points("E1", "recursive", input, PlotGenerator::n, e -> e.getValue().medianMs),
+                    recursivePoints(input, e -> e.getValue().medianMs),
                     INPUT_COLOR.get(input), SeriesMarkers.CIRCLE, SeriesLines.SOLID);
         }
         add(c, "table, random", points("E1", "table", "random", PlotGenerator::n, e -> e.getValue().medianMs),

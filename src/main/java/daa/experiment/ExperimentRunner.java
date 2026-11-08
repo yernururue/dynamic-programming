@@ -27,6 +27,8 @@ import java.util.Locale;
  * <ul>
  *   <li>E1 - Edit Distance, all three versions, n = 3..12, inputs random / typo / disjoint.</li>
  *   <li>E2 - Edit Distance, table and two rows, n = 500..8000, same inputs.</li>
+ *   <li>E1L - limit probe added after the first run: recursive only, disjoint input, n = 13, 14,
+ *       3 runs.</li>
  *   <li>S1 - Naive and KMP, text n = 125k..2M, m = 100, inputs random / worst / allmatch.</li>
  *   <li>S2 - Naive and KMP, n = 1M, m = 4..1024, inputs random / worst.</li>
  * </ul>
@@ -41,6 +43,8 @@ public final class ExperimentRunner {
     static final int[] E1_SIZES = {3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
     static final int[] E2_SIZES = {500, 1000, 2000, 4000, 8000};
     static final List<String> EDIT_INPUTS = List.of("random", "typo", "disjoint");
+    static final int[] E1L_SIZES = {13, 14};
+    static final int LIMIT_PROBE_RUNS = 3;
 
     static final int[] S1_SIZES = {125_000, 250_000, 500_000, 1_000_000, 2_000_000};
     static final int S1_PATTERN = 100;
@@ -72,8 +76,11 @@ public final class ExperimentRunner {
             EditDistance recursive = new RecursiveEditDistance();
             EditDistance table = new TableEditDistance();
             EditDistance twoRows = new TwoRowEditDistance();
-            runEdit("E1", E1_SIZES, List.of(recursive, table, twoRows));
-            runEdit("E2", E2_SIZES, List.of(table, twoRows));
+            runEdit("E1", E1_SIZES, EDIT_INPUTS, List.of(recursive, table, twoRows), WARMUP_RUNS, MEASURED_RUNS);
+            runEdit("E2", E2_SIZES, EDIT_INPUTS, List.of(table, twoRows), WARMUP_RUNS, MEASURED_RUNS);
+            // Added after the first run (see REPORT.md 1.1): where does recursion really stop?
+            // Worst-case input only, 3 runs and no extra warm-up, because one run takes seconds.
+            runEdit("E1L", E1L_SIZES, List.of("disjoint"), List.of(recursive), 0, LIMIT_PROBE_RUNS);
 
             List<StringSearch> searches = List.of(new NaiveSearch(), new KmpSearch());
             for (String input : S1_INPUTS) {
@@ -95,18 +102,19 @@ public final class ExperimentRunner {
 
     // ------------------------------------------------------------------ Edit Distance
 
-    private void runEdit(String experiment, int[] sizes, List<EditDistance> algorithms) {
-        for (String input : EDIT_INPUTS) {
+    private void runEdit(String experiment, int[] sizes, List<String> inputs, List<EditDistance> algorithms,
+                         int warmupRuns, int measuredRuns) {
+        for (String input : inputs) {
             for (int n : sizes) {
                 InputGenerator.Pair p = new InputGenerator(InputGenerator.seedFor(experiment, input, n, 0))
                         .editPair(input, n);
                 Integer expected = null;
                 for (EditDistance algo : algorithms) {
-                    for (int w = 0; w < WARMUP_RUNS; w++) {
+                    for (int w = 0; w < warmupRuns; w++) {
                         algo.distance(p.a(), p.b());
                     }
-                    double[] times = new double[MEASURED_RUNS];
-                    for (int run = 1; run <= MEASURED_RUNS; run++) {
+                    double[] times = new double[measuredRuns];
+                    for (int run = 1; run <= measuredRuns; run++) {
                         long t0 = System.nanoTime();
                         int d = algo.distance(p.a(), p.b());
                         long t1 = System.nanoTime();
