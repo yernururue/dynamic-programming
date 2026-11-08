@@ -70,10 +70,3 @@ results/results.csv            all measured runs
 results/plots/                 PNG plots used in the report
 REPORT.md                      the report
 ```
-
-## AI-use acknowledgement
-
-An AI assistant (Claude by Anthropic, used through Claude Code) was used in this assignment.
-It generated the source code, the JUnit tests, the experiment runner and plot generator, and
-drafted REPORT.md and this README from the assignment text. All numbers and plots in the report
-come from `results/results.csv`, produced by running the code in this repository.
