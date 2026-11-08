@@ -182,9 +182,10 @@ public final class PlotGenerator {
                 points("E1", "table", "random", PlotGenerator::n, e -> e.getValue().subproblems),
                 GRAY, SeriesMarkers.SQUARE, SeriesLines.DASH_DASH);
         save(c, "p1_edit_subproblems_small_n.png",
-                "Recursive calls grow about 5.6x per extra character on disjoint and random words "
-                        + "(over 10^9 calls at n = 12), while the table needs only (n+1)(m+1) = 169 cells; "
-                        + "similar words (typo) keep recursion cheap because matching characters cost one call.");
+                "Recursive calls grow about 5.6x per extra character on the disjoint (worst-case) input "
+                        + "(377 million calls at n = 12, 11.9 billion at n = 14) and almost as fast on random words, "
+                        + "while the table always fills (n+1)(m+1) cells (169 at n = 12); similar words (typo) are much "
+                        + "cheaper but jump up and down with the position of the typo.");
     }
 
     private void p2EditTimeSmallN() throws IOException {
@@ -201,9 +202,9 @@ public final class PlotGenerator {
         add(c, "two rows, random", points("E1", "tworows", "random", PlotGenerator::n, e -> e.getValue().medianMs),
                 ORANGE, SeriesMarkers.DIAMOND, SeriesLines.DASH_DASH);
         save(c, "p2_edit_time_small_n.png",
-                "Recursive time follows its call count: about one more order of magnitude every "
-                        + "1.3 characters, reaching seconds at n = 12, while both DP versions stay "
-                        + "around a microsecond.");
+                "Recursive time follows its call count (about x5.6 per character): 0.75 s at n = 12, "
+                        + "4.2 s at n = 13 and 23.5 s at n = 14 on the worst input, while both DP versions stay "
+                        + "below one microsecond for all these sizes.");
     }
 
     private void p3EditDpTime() throws IOException {
@@ -218,16 +219,16 @@ public final class PlotGenerator {
                     INPUT_COLOR.get(input), SeriesMarkers.DIAMOND, SeriesLines.DASH_DASH);
         }
         save(c, "p3_edit_dp_time_large_n.png",
-                "Both DP versions grow quadratically (about x4 per doubling of n) and the input type "
-                        + "barely matters; two rows is not slower although it allocates "
-                        + "2(m+1) instead of (n+1)(m+1) cells.");
+                "Both DP versions grow about x4 per doubling of n (quadratic) on every input; at n = 8000 "
+                        + "two rows is about 1.5x faster than the full table (139 vs 203 ms on random words) while "
+                        + "allocating 16,002 instead of 64 million int cells.");
     }
 
     private void p4EditNsPerCell() throws IOException {
         XYChart c = chart("P4. Edit Distance: time per DP cell (ratio)",
-                "string length n = m (characters, log scale)", "median time / filled cells (ns per cell)");
-        c.getStyler().setXAxisLogarithmic(true);
+                "string length n = m (characters)", "median time / filled cells (ns per cell)");
         c.getStyler().setYAxisMin(0.0);
+        c.getStyler().setLegendPosition(Styler.LegendPosition.InsideSE);
         for (String input : List.of("random", "typo", "disjoint")) {
             add(c, "table, " + INPUT_LABEL.get(input),
                     points("E2", "table", input, PlotGenerator::n,
@@ -239,29 +240,30 @@ public final class PlotGenerator {
                     INPUT_COLOR.get(input), SeriesMarkers.DIAMOND, SeriesLines.DASH_DASH);
         }
         save(c, "p4_edit_dp_ns_per_cell.png",
-                "Time per cell stays in a narrow band from n = 500 to n = 8000, so the running time "
-                        + "is proportional to n*m as the theory says.");
+                "Two rows costs a flat 2.2 ns per cell (2.6 ns on disjoint input), so its time is exactly "
+                        + "proportional to n*m; the table pays more per cell and is noisier (2.6-4.6 ns) because it "
+                        + "must allocate and zero up to 256 MB.");
     }
 
     // ------------------------------------------------------------------ String search plots
 
     private void p5SearchComparisons() throws IOException {
-        XYChart c = chart("P5. String search: character comparisons vs text length (m = 100)",
-                "text length n (characters, log scale)", "text-pattern comparisons (log scale)");
-        c.getStyler().setXAxisLogarithmic(true);
+        XYChart c = chart("P5. String search: comparisons per text character (m = 100)",
+                "text length n (characters)", "comparisons / n (ratio, log scale)");
         c.getStyler().setYAxisLogarithmic(true);
+        c.getStyler().setLegendPosition(Styler.LegendPosition.OutsideE);
         for (String input : List.of("worst", "allmatch", "random")) {
             add(c, "naive, " + INPUT_LABEL.get(input),
-                    points("S1", "naive", input, PlotGenerator::n, e -> e.getValue().comparisons),
+                    points("S1", "naive", input, PlotGenerator::n, e -> (double) e.getValue().comparisons / n(e)),
                     INPUT_COLOR.get(input), SeriesMarkers.CIRCLE, SeriesLines.SOLID);
             add(c, "KMP, " + INPUT_LABEL.get(input),
-                    points("S1", "kmp", input, PlotGenerator::n, e -> e.getValue().comparisons),
+                    points("S1", "kmp", input, PlotGenerator::n, e -> (double) e.getValue().comparisons / n(e)),
                     INPUT_COLOR.get(input), SeriesMarkers.DIAMOND, SeriesLines.DASH_DASH);
         }
-        save(c, "p5_search_comparisons_vs_n.png",
-                "All lines are parallel (linear in n), but on the A..A inputs Naive sits about 50-100x "
-                        + "higher than KMP (m comparisons per window), while on random text both make "
-                        + "about 1.04 n comparisons.");
+        save(c, "p5_search_comparisons_per_char.png",
+                "Every line is flat, so all costs are linear in n, but at very different levels: Naive needs "
+                        + "100 comparisons per text character on both A..A inputs (the two lines coincide), KMP needs 2 "
+                        + "(worst) or 1 (allmatch), and on random text both need about 1.04.");
     }
 
     private void p6SearchRatioVsM() throws IOException {
@@ -278,8 +280,9 @@ public final class PlotGenerator {
                     INPUT_COLOR.get(input), SeriesMarkers.DIAMOND, SeriesLines.DASH_DASH);
         }
         save(c, "p6_search_ratio_vs_m.png",
-                "On the worst input the Naive/KMP gap grows in proportion to m (about m/2), "
-                        + "while on random text the ratio stays near 1 for every pattern length.");
+                "On the worst input the Naive/KMP gap grows in proportion to the pattern length (2x at m = 4, "
+                        + "about 510x at m = 1024, i.e. about m/2) in comparisons and in time alike; on random text the "
+                        + "ratio stays at about 1 for every m.");
     }
 
     /** Naive / KMP for experiment S2 as a function of m (KMP counted with its LPS work). */
@@ -297,7 +300,9 @@ public final class PlotGenerator {
 
     private void p7SearchTimeVsN() throws IOException {
         XYChart c = chart("P7. String search: running time vs text length (m = 100)",
-                "text length n (characters)", "median time of 5 runs (ms)");
+                "text length n (characters)", "median time of 5 runs (ms, log scale)");
+        c.getStyler().setYAxisLogarithmic(true);
+        c.getStyler().setLegendPosition(Styler.LegendPosition.OutsideE);
         for (String input : List.of("worst", "allmatch", "random")) {
             add(c, "naive, " + INPUT_LABEL.get(input),
                     points("S1", "naive", input, PlotGenerator::n, e -> e.getValue().medianMs),
@@ -307,8 +312,9 @@ public final class PlotGenerator {
                     INPUT_COLOR.get(input), SeriesMarkers.DIAMOND, SeriesLines.DASH_DASH);
         }
         save(c, "p7_search_time_vs_n.png",
-                "Times confirm the counters: Naive on the A..A inputs is the only steep line, "
-                        + "KMP stays flat and close to Naive-on-random for every input.");
+                "Times confirm the counters: Naive on the A..A inputs is about 50x slower than KMP; KMP on "
+                        + "allmatch is slower than KMP on worst despite fewer comparisons, because it has to store "
+                        + "about 2 million matches.");
     }
 
     // ------------------------------------------------------------------ chart helpers
